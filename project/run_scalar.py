@@ -2,6 +2,7 @@
 Be sure you have minitorch installed in you Virtual Env.
 >>> pip install -Ue .
 """
+
 import random
 
 import minitorch
@@ -10,12 +11,10 @@ import minitorch
 class Network(minitorch.Module):
     def __init__(self, hidden_layers):
         super().__init__()
-        # ASSIGN1.5
         # Submodules
         self.layer1 = Linear(2, hidden_layers)
         self.layer2 = Linear(hidden_layers, hidden_layers)
         self.layer3 = Linear(hidden_layers, 1)
-        # END ASSIGN1.5
 
     def forward(self, x):
         middle = [h.relu() for h in self.layer1.forward(x)]
@@ -44,13 +43,22 @@ class Linear(minitorch.Module):
             )
 
     def forward(self, inputs):
-        # ASSIGN1.5
-        y = [b.value for b in self.bias]
-        for i, x in enumerate(inputs):
-            for j in range(len(y)):
-                y[j] = y[j] + x * self.weights[i][j].value
-        return y
-        # END ASSIGN1.5
+        # ASSIGN1.5 - Template `forward` impl
+        # y = [b.value for b in self.bias]
+        # for i, x in enumerate(inputs):
+        #     for j in range(len(y)):
+        #         y[j] = y[j] + x * self.weights[i][j].value
+        # return y
+        # # END ASSIGN1.5
+
+        # START My `forward` impl
+        out = []
+        for out_ind in range(len(self.bias)):
+            val = self.bias[out_ind].value
+            for inp_ind in range(len(self.weights)):
+                val += inputs[inp_ind] * self.weights[inp_ind][out_ind].value
+            out.append(val)
+        return out
 
 
 def default_log_fn(epoch, total_loss, correct, losses):
@@ -109,6 +117,7 @@ class ScalarTrain:
 
 
 if __name__ == "__main__":
+    random.seed(5)
     PTS = 50
     HIDDEN = 2
     RATE = 0.5

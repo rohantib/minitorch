@@ -94,7 +94,7 @@ def log_back(x: float, d: float) -> float:
 
 def inv(x: float) -> float:
     "$f(x) = 1/x$"
-    return 1 / x
+    return 1.0 / x
 
 
 def inv_back(x: float, d: float) -> float:
@@ -105,6 +105,17 @@ def inv_back(x: float, d: float) -> float:
 def relu_back(x: float, d: float) -> float:
     r"If $f = relu$ compute $d \times f'(x)$"
     return d if x > 0.0 else 0.0
+
+
+def exp_back(x: float, d: float) -> float:
+    r"If $f = exp$ compute $d \times f'(x)$"
+    return d * exp(x)
+
+
+def sigmoid_back(x: float, d: float) -> float:
+    r"If $f = sigmoid$ compute $d \times f'(x)$"
+    sig_x = sigmoid(x)
+    return d * sig_x * (1 - sig_x)
 
 
 # ## Task 0.3
