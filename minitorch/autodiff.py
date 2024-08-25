@@ -88,12 +88,6 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
 
     No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
     """
-    # NOTE: This safety check might not be necessary
-    if deriv is None:
-        deriv = 1.0
-    deriv = float(
-        deriv
-    )  # In case an integer input was passed in, don't want to risk propagating it
     top_order = topological_sort(variable)
     intermediate_derivs = {variable.unique_id: deriv}
     for var in top_order:

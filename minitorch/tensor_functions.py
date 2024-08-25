@@ -16,9 +16,9 @@ from .autodiff import Context
 from .tensor_ops import SimpleBackend, TensorBackend
 
 if TYPE_CHECKING:
-    from typing import Any, List, Tuple
+    from typing import Any, List, Tuple, Union
 
-    from .tensor import Tensor
+    from .tensor import Shape, Strides, Tensor
     from .tensor_data import UserIndex, UserShape
 
 
@@ -46,6 +46,7 @@ class Function:
         for v in vals:
             if v.requires_grad():
                 need_grad = True
+            # NOTE: Detach seems unnecessary here, just clears the tensor's history when used for processing in apply, but that is regardless not tracked.
             raw_vals.append(v.detach())
 
         # Create the context.
@@ -99,125 +100,160 @@ class Add(Function):
 class Mul(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+        ctx.save_for_backward(a, b)
+        return a.f.mul_zip(a, b)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError('Need to implement for Task 2.4')
+        a, b = ctx.saved_values
+        return grad_output.f.mul_zip(b, grad_output), grad_output.f.mul_zip(
+            a, grad_output
+        )
 
 
 class Sigmoid(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+        ctx.save_for_backward(t1)
+        return t1.f.sigmoid_map(t1)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError('Need to implement for Task 2.4')
+        (t1,) = ctx.saved_values
+        return grad_output.f.sigmoid_back_zip(t1, grad_output)
 
 
 class ReLU(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+        ctx.save_for_backward(t1)
+        return t1.f.relu_map(t1)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError('Need to implement for Task 2.4')
+        (t1,) = ctx.saved_values
+        return grad_output.f.relu_back_zip(t1, grad_output)
 
 
 class Log(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+        ctx.save_for_backward(t1)
+        return t1.f.log_map(t1)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError('Need to implement for Task 2.4')
+        (t1,) = ctx.saved_values
+        return grad_output.f.log_back_zip(t1, grad_output)
 
 
 class Exp(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+        ctx.save_for_backward(t1)
+        return t1.f.exp_map(t1)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError('Need to implement for Task 2.4')
+        (t1,) = ctx.saved_values
+        # NOTE: Although this could be implemented trivially with existing tensor operations without an explicit exp_back_zip,
+        # having a dedicated zip process for it avoid having to go through `apply` and more created tensors and unused gradient tracking.
+        return grad_output.f.exp_back_zip(t1, grad_output)
 
 
 class Sum(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, dim: Tensor) -> Tensor:
-        ctx.save_for_backward(a.shape, dim)
         return a.f.add_reduce(a, int(dim.item()))
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
-        a_shape, dim = ctx.saved_values
         return grad_output, 0.0
 
 
 class All(Function):
+    # NOTE: This appears to not need a `backward` implementation since it is only used in testing.
     @staticmethod
     def forward(ctx: Context, a: Tensor, dim: Tensor) -> Tensor:
         if dim is not None:
             return a.f.mul_reduce(a, int(dim.item()))
         else:
+            # NOTE: Seems like this is old code? This block shouldn't be called based on type hinting
             return a.f.mul_reduce(a.contiguous().view(int(operators.prod(a.shape))), 0)
 
 
 class LT(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+        ctx.save_for_backward(a, b)
+        return a.f.lt_zip(a, b)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError('Need to implement for Task 2.4')
+        a, b = ctx.saved_values
+        return grad_output.zeros(a.shape), grad_output.zeros(b.shape)
 
 
 class EQ(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+        ctx.save_for_backward(a, b)
+        return a.f.eq_zip(a, b)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError('Need to implement for Task 2.4')
+        a, b = ctx.saved_values
+        return grad_output.zeros(a.shape), grad_output.zeros(b.shape)
 
 
 class IsClose(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+        return a.f.is_close_zip(a, b)
 
 
 class Permute(Function):
+
+    # Helper Function
+    @staticmethod
+    def _t_ndarr_to_tuple(t: Union[Tensor, Shape, Strides]) -> Tuple[int, ...]:
+        """
+        Converts a tensor or numpy array to an int tuple
+        """
+        return tuple([int(t[i]) for i in range(t.size)])
+
     @staticmethod
     def forward(ctx: Context, a: Tensor, order: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+        ctx.save_for_backward(order)
+        new_tensor_data = a._tensor.permute(*Permute._t_ndarr_to_tuple(order))
+        new_t_storage, new_t_shape, new_t_strides = new_tensor_data.tuple()
+        return minitorch.Tensor.make(
+            new_t_storage,
+            Permute._t_ndarr_to_tuple(new_t_shape),
+            strides=Permute._t_ndarr_to_tuple(new_t_strides),
+            backend=a.backend,
+        )
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError('Need to implement for Task 2.4')
+        (order,) = ctx.saved_values
+        restore_order = grad_output.zeros((order.size,))
+        # Generate the inverse permutation
+        for i in range(order.size):
+            restore_order[int(order[i])] = i
+        new_tensor_data = grad_output._tensor.permute(
+            *Permute._t_ndarr_to_tuple(restore_order)
+        )
+        new_t_storage, new_t_shape, new_t_strides = new_tensor_data.tuple()
+        return (
+            minitorch.Tensor.make(
+                new_t_storage,
+                Permute._t_ndarr_to_tuple(new_t_shape),
+                strides=Permute._t_ndarr_to_tuple(new_t_strides),
+                backend=grad_output.backend,
+            ),
+            0.0,
+        )
 
 
 class View(Function):
@@ -307,6 +343,7 @@ def rand(
     """
     vals = [random.random() for _ in range(int(operators.prod(shape)))]
     tensor = minitorch.Tensor.make(vals, shape, backend=backend)
+    # NOTE: This requires_grad call seems to be unnecessary for any current use case of this function
     tensor.requires_grad_(requires_grad)
     return tensor
 

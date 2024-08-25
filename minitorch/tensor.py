@@ -94,9 +94,11 @@ class Tensor:
         else:
             self.name = str(self.unique_id)
 
+        # NOTE: Is this distinction between f and backend necessary or problematic since it isn't synced with backend? Perhaps more evident in module 3
         self.f = backend
 
     def requires_grad_(self, x: bool) -> None:
+        # NOTE: The code seems to not make use of the boolean at all. Probably is unnecessary
         self.history = History()
 
     def requires_grad(self) -> bool:
@@ -310,6 +312,7 @@ class Tensor:
             out = zero(self.shape)
         else:
             out = zero(shape)
+        # NOTE: Is this necessary if backend is already assigned above? Relevant to CUDA prob - module 3
         out._type_(self.backend)
         return out
 
@@ -356,6 +359,7 @@ class Tensor:
 
         x = h.last_fn._backward(h.ctx, d_output)
         assert len(x) == len(h.inputs), f"Bug in function {h.last_fn}"
+        # NOTE: Try to understand role of expand here
         return [
             (inp, inp.expand(self._ensure_tensor(d_in)))
             for inp, d_in in zip(h.inputs, x)

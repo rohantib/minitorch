@@ -137,6 +137,7 @@ class Parameter:
         self.value = x
         self.name = name
         if hasattr(x, "requires_grad_"):
+            # NOTE: This is NECESSARY to reset the history of any computations that may have been done in constructing the parameter thus far.
             self.value.requires_grad_(True)
             if self.name:
                 self.value.name = self.name
